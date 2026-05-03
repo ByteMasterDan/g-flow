@@ -20,16 +20,20 @@ function getFlows(token) {
     for (let i = 1; i < data.length; i++) {
       if (data[i][0]) {
         let steps = [];
+        let formData = [];
         try { steps = JSON.parse(data[i][3] || '[]'); } catch (e) { /* ignore */ }
+        try { formData = JSON.parse(data[i][4] || '[]'); } catch (e) { /* ignore */ }
 
         flows.push({
           flowId: data[i][0],
           flowName: data[i][1],
           description: data[i][2],
           steps: steps,
-          createdBy: data[i][4],
-          createdAt: data[i][5],
-          isActive: data[i][6] === true || data[i][6] === 'TRUE',
+          formData: formData,
+          formLink: data[i][5] || '',
+          createdBy: data[i][6],
+          createdAt: data[i][7],
+          isActive: data[i][8] === true || data[i][8] === 'TRUE',
         });
       }
     }
@@ -55,12 +59,15 @@ function createFlow(token, flowData) {
 
     const flowId = 'FLOW-' + new Date().getTime();
     const now = new Date().toISOString();
+    const formLink = ScriptApp.getService().getUrl() + '?form=' + flowId;
 
     sheet.appendRow([
       flowId,
       flowData.name,
       flowData.description || '',
       JSON.stringify(flowData.steps || []),
+      JSON.stringify(flowData.formData || []),
+      formLink,
       session.email,
       now,
       true,
@@ -92,7 +99,8 @@ function updateFlow(token, flowId, flowData) {
         if (flowData.name) sheet.getRange(i + 1, 2).setValue(flowData.name);
         if (flowData.description !== undefined) sheet.getRange(i + 1, 3).setValue(flowData.description);
         if (flowData.steps) sheet.getRange(i + 1, 4).setValue(JSON.stringify(flowData.steps));
-        if (flowData.isActive !== undefined) sheet.getRange(i + 1, 7).setValue(flowData.isActive);
+        if (flowData.formData !== undefined) sheet.getRange(i + 1, 5).setValue(JSON.stringify(flowData.formData));
+        if (flowData.isActive !== undefined) sheet.getRange(i + 1, 9).setValue(flowData.isActive);
         logAuditAction(flowId, session.email, 'UPDATED', 'Flow updated: ' + flowId);
         return { success: true, message: 'Flow updated' };
       }
@@ -119,7 +127,7 @@ function deleteFlow(token, flowId) {
 
     for (let i = 1; i < data.length; i++) {
       if (data[i][0] === flowId) {
-        sheet.getRange(i + 1, 7).setValue(false);
+        sheet.getRange(i + 1, 9).setValue(false);
         logAuditAction(flowId, session.email, 'DEACTIVATED', 'Flow deactivated: ' + flowId);
         return { success: true, message: 'Flow deactivated' };
       }
@@ -146,7 +154,9 @@ function getFlowById(token, flowId) {
     for (let i = 1; i < data.length; i++) {
       if (data[i][0] === flowId) {
         let steps = [];
+        let formData = [];
         try { steps = JSON.parse(data[i][3] || '[]'); } catch (e) { /* ignore */ }
+        try { formData = JSON.parse(data[i][4] || '[]'); } catch (e) { /* ignore */ }
 
         return {
           success: true,
@@ -155,9 +165,11 @@ function getFlowById(token, flowId) {
             flowName: data[i][1],
             description: data[i][2],
             steps: steps,
-            createdBy: data[i][4],
-            createdAt: data[i][5],
-            isActive: data[i][6] === true || data[i][6] === 'TRUE',
+            formData: formData,
+            formLink: data[i][5] || '',
+            createdBy: data[i][6],
+            createdAt: data[i][7],
+            isActive: data[i][8] === true || data[i][8] === 'TRUE',
           },
         };
       }

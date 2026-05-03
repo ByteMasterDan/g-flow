@@ -45,10 +45,11 @@ export function callGAS<T>(action: string, params: Record<string, unknown> = {})
       }
 
       run.withSuccessHandler((result: { success: boolean; data: T; error: string | null }) => {
-          if (result && result.success) {
+          if (result && result.success && result.data) {
             resolve(result.data)
           } else {
-            reject(new Error(result?.error || 'Unknown error'))
+            const errMsg = result?.data?.error || result?.error || 'Unknown error'
+            reject(new Error(errMsg))
           }
         })
         .withFailureHandler((error: Error) => reject(error))

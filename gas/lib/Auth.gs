@@ -207,11 +207,15 @@ function changePassword(token, oldPassword, newPassword) {
  * API: Get all users (Admin only)
  */
 function getAllUsers(token) {
-  if (!hasRole(token, 'Admin')) {
-    return { success: false, error: 'Access denied' };
-  }
-
   try {
+    const session = getSession(token);
+    if (!session.authenticated) {
+      return { success: false, error: session.error || 'Not authenticated' };
+    }
+    if (session.role !== 'Admin') {
+      return { success: false, error: 'Access denied - Admin role required' };
+    }
+
     const ss = CONFIG.getSpreadsheet();
     const sheet = ss.getSheetByName('USERS');
     if (!sheet) return { success: true, users: [] };
@@ -235,7 +239,7 @@ function getAllUsers(token) {
 
     return { success: true, users: users };
   } catch (e) {
-    return { success: false, error: e.message };
+    return { success: false, error: 'getAllUsers error: ' + e.message };
   }
 }
 

@@ -7,7 +7,6 @@ import { Separator } from '@/components/ui/separator'
 import {
   LayoutDashboard,
   Workflow,
-  GitBranch,
   CheckCircle,
   Building2,
   ScrollText,
@@ -29,7 +28,6 @@ interface Route {
 const routeIcons: Record<string, React.ReactNode> = {
   '/dashboard': <LayoutDashboard className="h-5 w-5" />,
   '/flows': <Workflow className="h-5 w-5" />,
-  '/builder': <GitBranch className="h-5 w-5" />,
   '/execution': <CheckCircle className="h-5 w-5" />,
   '/entities': <Building2 className="h-5 w-5" />,
   '/audit': <ScrollText className="h-5 w-5" />,

@@ -5,7 +5,7 @@
 
 const SCHEMAS = {
   USERS: ['Email', 'PasswordHash', 'Role', 'DisplayName', 'Skills', 'CreatedAt', 'IsActive', 'LastLogin', 'Notes'],
-  FLOWS: ['FlowID', 'FlowName', 'Description', 'Steps', 'CreatedBy', 'CreatedAt', 'IsActive'],
+  FLOWS: ['FlowID', 'FlowName', 'Description', 'Steps', 'FormData', 'FormLink', 'CreatedBy', 'CreatedAt', 'IsActive'],
   APPROVALS: ['ApprovalID', 'FlowID', 'CurrentStep', 'Status', 'SubmittedBy', 'EntityTag', 'Files', 'SubmittedAt', 'CompletedAt'],
   ENTITIES: ['EntityID', 'EntityType', 'DisplayName', 'VerifiedEmail', 'IsActive', 'CreatedAt'],
   SKILLS: ['SkillID', 'SkillName', 'Description', 'IsActive'],

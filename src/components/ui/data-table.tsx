@@ -67,7 +67,7 @@ export function DataTable<TData, TValue>({
   })
 
   return (
-    <div className="w-full">
+    <div className="w-full p-4">
       <div className="flex items-center py-4 gap-2">
         {searchKey && (
           <Input

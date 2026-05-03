@@ -31,6 +31,7 @@ function apiCall(jsonString) {
       // System
       case 'isSystemConfigured':
         response.data = { configured: isSystemConfigured() };
+        response.success = true;
         break;
       case 'setupSystem':
         response.data = setupSystem(args.spreadsheetId);
@@ -40,6 +41,7 @@ function apiCall(jsonString) {
         break;
       case 'getConfigStatus':
         response.data = getConfigStatus();
+        response.success = true;
         break;
       case 'getDashboardStats':
         response.data = getDashboardStats(args.token);
@@ -106,6 +108,35 @@ function apiCall(jsonString) {
         response.data = getAuditLogs(args.token, args.filters);
         break;
 
+      // Flow Engine
+      case 'startExecution':
+        response.data = startExecution(args.token, args.flowId, args.formData, args.files);
+        break;
+      case 'getExecutions':
+        response.data = getExecutions(args.token, args.flowId);
+        break;
+      case 'getApprovals':
+        response.data = getApprovals(args.token);
+        break;
+      case 'processApproval':
+        response.data = processApproval(args.token, args.executionId, args.action, args.comment);
+        break;
+      case 'getExecutionDetail':
+        response.data = getExecutionDetail(args.token, args.executionId);
+        break;
+      case 'getGmailAliases':
+        response.data = getGmailAliases();
+        break;
+      case 'sendFlowEmail':
+        response.data = sendFlowEmail(args.token, args.config);
+        break;
+      case 'saveToSheet':
+        response.data = saveToSheet(args.token, args.spreadsheetId, args.sheetName, args.data);
+        break;
+      case 'saveFileToDrive':
+        response.data = saveFileToDrive(args.token, args.fileData, args.folderPath, args.fileName);
+        break;
+
       // Bootstrap
       case 'forceBootstrap':
         response.data = forceBootstrap(args.token);
@@ -115,10 +146,10 @@ function apiCall(jsonString) {
         response.error = 'Unknown action: ' + action;
     }
 
-    response.success = !response.error;
-
+    response.success = response.data && response.data.success !== undefined ? response.data.success : !response.error;
   } catch (error) {
-    response.error = error.message;
+    response.error = error.message || 'Unknown error';
+    response.success = false;
   }
 
   return response;

@@ -4,7 +4,6 @@ import { callGAS } from './components/AuthGate'
 import Sidebar from './components/layout/Sidebar'
 import Dashboard from './pages/Dashboard'
 import Flows from './pages/Flows'
-import FlowBuilder from './pages/FlowBuilder'
 import FlowExecution from './pages/FlowExecution'
 import Entities from './pages/Entities'
 import AuditLog from './pages/AuditLog'
@@ -17,7 +16,6 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 const routes = [
   { path: '/dashboard', label: 'Dashboard', roles: ['Admin', 'SuperApprover', 'Approver', 'Operator'] },
   { path: '/flows', label: 'Flows', roles: ['Admin', 'SuperApprover', 'Approver'] },
-  { path: '/builder', label: 'Workflow Builder', roles: ['Admin', 'SuperApprover'] },
   { path: '/execution', label: 'Approvals', roles: ['Admin', 'SuperApprover', 'Approver'] },
   { path: '/entities', label: 'Entity Directory', roles: ['Admin', 'Operator'] },
   { path: '/audit', label: 'Audit Log', roles: ['Admin', 'SuperApprover'] },
@@ -75,7 +73,6 @@ function AppContent() {
     switch (currentRoute) {
       case '/dashboard': return <Dashboard />
       case '/flows': return <Flows />
-      case '/builder': return <FlowBuilder />
       case '/execution': return <FlowExecution />
       case '/entities': return <Entities />
       case '/audit': return <AuditLog />

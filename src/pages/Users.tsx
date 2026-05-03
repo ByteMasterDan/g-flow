@@ -37,7 +37,7 @@ export default function Users() {
   const loadUsers = async () => {
     try {
       const result = await callGAS<{ success: boolean; users: User[] }>('getAllUsers', { token: user?.token })
-      if (result.success) setUsers(result.users)
+      if (result && result.success && result.users) setUsers(result.users)
     } catch (e) {
       console.error('Load users error:', e)
     } finally {
@@ -65,7 +65,7 @@ export default function Users() {
       setDialogOpen(false)
       setEditingUser(null)
       setFormData({ email: '', password: '', role: 'Operator', displayName: '', skills: '' })
-      loadUsers()
+      await loadUsers()
     } catch (e) {
       console.error('Save user error:', e)
     }
