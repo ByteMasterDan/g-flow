@@ -19,7 +19,7 @@ import ApprovalNode from '../components/workflow/ApprovalNode'
 import ArchiveNode from '../components/workflow/ArchiveNode'
 import {
   Plus, Edit, Trash2, ArrowLeft, Save, GripVertical,
-  Copy, Play, ClipboardList, Database, Mail, CheckCircle, FolderArchive, Square
+  Copy, Play, ClipboardList, Database, Mail, CheckCircle, FolderArchive, Square, RefreshCw
 } from 'lucide-react'
 import ReactFlow, {
   Node, addEdge, Background, Controls, MiniMap,
@@ -108,6 +108,17 @@ export default function Flows() {
     setEdges([])
     setSelectedNode(null)
     setMode('edit')
+  }
+
+  const refreshUsers = async () => {
+    try {
+      const uRes = await callGAS<{ success: boolean; users: any[]; error?: string }>('getAllUsers', { token: user?.token })
+      if (uRes && uRes.success) {
+        setUsersList(uRes.users || [])
+      } else {
+        console.error('Refresh users error:', uRes?.error)
+      }
+    } catch (e) { console.error('Refresh users error:', e) }
   }
 
   const openEditMode = async (flow: any) => {
@@ -365,7 +376,12 @@ export default function Flows() {
                     {(selectedNode.type === 'approval') && (
                       <>
                         <div>
-                          <Label className="text-xs">Assignee</Label>
+                          <div className="flex items-center justify-between">
+                            <Label className="text-xs">Assignee</Label>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={refreshUsers} title="Refresh users">
+                              <RefreshCw className="h-3 w-3" />
+                            </Button>
+                          </div>
                           <Select value={selectedNode.data.assignee || ''} onValueChange={v => updateNodeData('assignee', v)}>
                             <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select user" /></SelectTrigger>
                             <SelectContent>
@@ -429,10 +445,18 @@ export default function Flows() {
                     {selectedNode.type === 'form' && (
                       <div className="pt-2">
                         <div>
-                          <Label className="text-xs mt-1 block">Assignees</Label>
+                          <div className="flex items-center justify-between mt-1">
+                            <Label className="text-xs">Assignees</Label>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={refreshUsers} title="Refresh users">
+                              <RefreshCw className="h-3 w-3" />
+                            </Button>
+                          </div>
                           <div className="border border-border rounded-lg p-2 max-h-40 overflow-y-auto space-y-1">
                             {usersList.length === 0 && (
-                              <p className="text-xs text-muted-foreground py-1">No active users found.</p>
+                              <p className="text-xs text-muted-foreground py-1">No users loaded. Click refresh to try again.</p>
+                            )}
+                            {usersList.length > 0 && usersList.filter((u: any) => u.isActive).length === 0 && (
+                              <p className="text-xs text-muted-foreground py-1">No active users. {usersList.length} user(s) found but all are inactive.</p>
                             )}
                             {usersList.filter((u: any) => u.isActive).map((u: any) => {
                               const currentAssignees: string[] = selectedNode.data.assignees || []
