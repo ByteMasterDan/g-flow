@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { DataTable } from '@/components/ui/data-table'
 import { ColumnDef } from '@tanstack/react-table'
 import { motion, AnimatePresence } from 'framer-motion'
+import FormBuilder from '../components/form-builder'
 import FormNode from '../components/workflow/FormNode'
 import SaveToSheetNode from '../components/workflow/SaveToSheetNode'
 import EmailNode from '../components/workflow/EmailNode'
@@ -335,6 +336,16 @@ export default function Flows() {
 
                     {selectedNode.type === 'archive' && (
                       <div><Label className="text-xs">Folder Path</Label><Input value={selectedNode.data.folderPath || ''} onChange={e => updateNodeData('folderPath', e.target.value)} placeholder="Flow Name/Date" className="h-8 text-sm" /></div>
+                    )}
+
+                    {selectedNode.type === 'form' && (
+                      <div className="pt-2">
+                        <FormBuilder 
+                          fields={selectedNode.data.fields || []}
+                          onChange={fields => updateNodeData('fields', fields)}
+                          formLink={selectedFlow?.formLink}
+                        />
+                      </div>
                     )}
 
                     {selectedNode.id !== 'start' && selectedNode.id !== 'end' && (

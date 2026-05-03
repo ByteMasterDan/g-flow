@@ -64,13 +64,18 @@ function bootstrapDatabase() {
           result.sheets.push('Created: ' + sheetName);
         }
 
-        // Inject headers if missing
+        // Inject headers if missing or mismatched
         const headers = getHeaders(sheet);
         const expected = SCHEMAS[sheetName];
 
-        if (!headers || headers.length === 0 || !expected[0] || !headers.includes(expected[0])) {
+        if (!expected) continue;
+
+        const headersMatch = headers && headers.length === expected.length && 
+          expected.every((h, idx) => headers[idx] === h);
+
+        if (!headersMatch) {
           sheet.getRange(1, 1, 1, expected.length).setValues([expected]).setFontWeight('bold');
-          result.sheets.push('Headers added: ' + sheetName);
+          result.sheets.push('Headers synced: ' + sheetName);
         }
       } catch (e) {
         result.errors.push(sheetName + ': ' + e.message);

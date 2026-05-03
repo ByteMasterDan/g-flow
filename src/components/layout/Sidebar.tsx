@@ -22,7 +22,7 @@ interface Route {
   path: string
   label: string
   roles?: string[]
-  icon: React.ReactNode
+  icon?: React.ReactNode
 }
 
 const routeIcons: Record<string, React.ReactNode> = {

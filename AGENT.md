@@ -130,13 +130,14 @@ const CONFIG = {
 The CONFIG spreadsheet contains 4 sheets:
 
 ### Sheet: USERS (in CONFIG_SPREADSHEET_ID)
-| Email | Role | DisplayName | CreatedAt | LastLogin |
-|-------|------|-------------|-----------|-----------|
-| user@domain.com | Admin | John Doe | 2025-01-01 | 2025-05-02 |
+| Email | PasswordHash | Role | DisplayName | Skills | CreatedAt | IsActive | LastLogin | Notes |
+|-------|--------------|------|-------------|--------|-----------|----------|-----------|-------|
+| user@... | a1b2... | Admin | John Doe | Finance | 2025-01-01 | TRUE | 2025-05-02 | |
 
 - **Role**: `Admin`, `SuperApprover`, `Approver`, `Operator`
 - **PK**: Email (lowercase)
-- Only registered users can access the system
+- **Skills**: Comma separated string mapping to flow rules
+- Only registered and IsActive=TRUE users can access the system
 
 ### Sheet: ENTITIES (DLP Directory in CONFIG_SPREADSHEET_ID)
 | EntityID | EntityType | DisplayName | VerifiedEmail | IsActive | CreatedAt |
@@ -156,13 +157,18 @@ The CONFIG spreadsheet contains 4 sheets:
 - **actionType**: `approve` | `email_client` | `email_internal` | `archive` | `custom`
 
 ### Sheet: APPROVALS (in CONFIG_SPREADSHEET_ID)
-| ApprovalID | FlowID | CurrentStep | Status | SubmittedBy | EntityTag | Files | SubmittedAt |
-|-----------|--------|-------------|--------|-------------|-----------|------|-------------|
-| APP-001 | FLOW-001 | 1 | Pending | user@... | EMP-001 | JSON | 2025-05-02 |
+| ApprovalID | FlowID | CurrentStep | Status | SubmittedBy | EntityTag | Files | SubmittedAt | CompletedAt |
+|-----------|--------|-------------|--------|-------------|-----------|------|-------------|-------------|
+| APP-001 | FLOW-001 | 1 | Pending | user@... | EMP-001 | JSON | 2025-05-02 | |
 
-- **Status**: `Draft`, `Pending`, `RevisionsRequested`, `Approved`, `Dispatched`
+- **Status**: `Draft`, `Pending`, `RevisionsRequested`, `Approved`, `Dispatched`, `Rejected`
 - **EntityTag**: Links to ENTITIES.EntityID (strict DLP enforcement)
-- **Files (JSON)**: `[{ name, driveUrl, driveId, mimeType, pdfBlobId }]`
+- **Files (JSON)**: `[{ name, driveUrl, driveId, mimeType, pdfBlobId }]`. URLs are set to "Anyone with Link View" for seamless access.
+
+### Core Feature Architectures
+1. **Dynamic Form Builder**: Form configurations inside flows generate complex structured data, including file uploads tracked via Google Drive folder links. 
+2. **Schema Auto-Provisioning**: the `saveToSheet` process dynamically generates target Spreadsheet schemas out of Form payloads using `Object.keys()`.
+3. **Email Composer UI**: Complex action module bridging user execution steps to dynamic templates parsed using Handlebars-style literals (`{{entityName}}`, `{{executionId}}`).
 
 ### Sheet: AUDIT_LOG (in LOGS_SPREADSHEET_ID - Append-only)
 | Timestamp | ApprovalID | ActorEmail | Action | Details | Metadata |

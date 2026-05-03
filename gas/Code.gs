@@ -136,6 +136,12 @@ function apiCall(jsonString) {
       case 'saveFileToDrive':
         response.data = saveFileToDrive(args.token, args.fileData, args.folderPath, args.fileName);
         break;
+      case 'createSpreadsheetForFlow':
+        response.data = createSpreadsheetForFlow(args.token, args.name);
+        break;
+      case 'getDocuments':
+        response.data = getDocuments(args.token, args.filterEntity);
+        break;
 
       // Bootstrap
       case 'forceBootstrap':

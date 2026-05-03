@@ -286,14 +286,22 @@ function saveToSheet(token, spreadsheetId, sheetName, data) {
 
     if (!sheet) {
       sheet = ss.insertSheet(sheetName);
-      if (data && typeof data === 'object' && !Array.isArray(data)) {
-        sheet.getRange(1, 1, 1, Object.keys(data).length).setValues([Object.keys(data)]).setFontWeight('bold');
-      }
     }
 
     if (data && typeof data === 'object' && !Array.isArray(data)) {
-      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-      const values = headers.map(h => data[h] || '');
+      let headers = [];
+      const lastCol = sheet.getLastColumn();
+      if (lastCol > 0) {
+        headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+      }
+      
+      const newKeys = Object.keys(data).filter(k => !headers.includes(k));
+      if (newKeys.length > 0) {
+        headers.push(...newKeys);
+        sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
+      }
+
+      const values = headers.map(h => data[h] !== undefined ? data[h] : '');
 
       if (sheet.getLastRow() === 1 && sheet.getLastColumn() === 1 && sheet.getRange(1, 1).getValue() === '') {
         sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
@@ -346,6 +354,7 @@ function saveFileToDrive(token, fileData, folderPath, fileName) {
     );
 
     const file = parentFolder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
     return {
       success: true,
@@ -355,5 +364,78 @@ function saveFileToDrive(token, fileData, folderPath, fileName) {
     };
   } catch (e) {
     return { success: false, error: 'saveFileToDrive error: ' + e.message };
+  }
+}
+
+/**
+ * API: Create a new spreadsheet for flow
+ */
+function createSpreadsheetForFlow(token, name) {
+  const session = getSession(token);
+  if (!session.authenticated) return { success: false, error: 'Not authenticated' };
+
+  try {
+    const ss = SpreadsheetApp.create(name || 'New Flow Spreadsheet');
+    const file = DriveApp.getFileById(ss.getId());
+    
+    // Attempt to move to root folder if configured
+    let rootFolderId = PROPS.getProperty('ROOT_DRIVE_FOLDER_ID');
+    if (rootFolderId) {
+      const folder = DriveApp.getFolderById(rootFolderId);
+      file.moveTo(folder);
+    }
+    
+    return { success: true, spreadsheetId: ss.getId(), url: ss.getUrl() };
+  } catch (e) {
+    return { success: false, error: 'createSpreadsheet error: ' + e.message };
+  }
+}
+
+/**
+ * API: Get submitted documents
+ */
+function getDocuments(token, filterEntity) {
+  const session = getSession(token);
+  if (!session.authenticated) return { success: false, error: 'Not authenticated' };
+
+  try {
+    const ss = CONFIG.getSpreadsheet();
+    const sheet = ss.getSheetByName('APPROVALS');
+    if (!sheet) return { success: true, documents: [] };
+
+    const data = sheet.getDataRange().getValues();
+    const documents = [];
+
+    // APPROVALS schema: ['ApprovalID', 'FlowID', 'CurrentStep', 'Status', 'SubmittedBy', 'EntityTag', 'Files', 'SubmittedAt', 'CompletedAt']
+    for (let i = 1; i < data.length; i++) {
+      if (!data[i][0]) continue;
+      
+      const entityTag = data[i][5];
+      if (filterEntity && entityTag.toLowerCase() !== filterEntity.toLowerCase() && 
+          !entityTag.toLowerCase().includes(filterEntity.toLowerCase())) {
+        continue;
+      }
+      
+      let files = [];
+      try { 
+        files = JSON.parse(data[i][6] || '[]'); 
+      } catch (e) { }
+
+      if (files.length > 0) {
+        documents.push({
+          approvalId: data[i][0],
+          flowId: data[i][1],
+          status: data[i][3],
+          submittedBy: data[i][4],
+          entityTag: entityTag,
+          files: files,
+          submittedAt: data[i][7],
+        });
+      }
+    }
+
+    return { success: true, documents };
+  } catch (e) {
+    return { success: false, error: 'getDocuments error: ' + e.message };
   }
 }

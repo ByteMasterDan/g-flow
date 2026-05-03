@@ -9,14 +9,17 @@ import Entities from './pages/Entities'
 import AuditLog from './pages/AuditLog'
 import Users from './pages/Users'
 import Settings from './pages/Settings'
+import Documents from './pages/Documents'
 import Setup from './pages/Setup'
 import Login from './pages/Login'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
+// Mocking Route Type locally if needed, or assume Sidebar handles it if passed
 const routes = [
   { path: '/dashboard', label: 'Dashboard', roles: ['Admin', 'SuperApprover', 'Approver', 'Operator'] },
   { path: '/flows', label: 'Flows', roles: ['Admin', 'SuperApprover', 'Approver'] },
   { path: '/execution', label: 'Approvals', roles: ['Admin', 'SuperApprover', 'Approver'] },
+  { path: '/documents', label: 'Documents', roles: ['Admin', 'SuperApprover', 'Operator'] },
   { path: '/entities', label: 'Entity Directory', roles: ['Admin', 'Operator'] },
   { path: '/audit', label: 'Audit Log', roles: ['Admin', 'SuperApprover'] },
   { path: '/users', label: 'User Management', roles: ['Admin'] },
@@ -65,7 +68,7 @@ function AppContent() {
     return <Setup onComplete={() => setIsConfigured(true)} />
   }
 
-  if (!user?.authenticated) {
+  if (!user?.authenticated || !user.email || !user.role || !user.displayName) {
     return <Login onSuccess={(token, userData) => login(token, userData)} />
   }
 
@@ -74,6 +77,7 @@ function AppContent() {
       case '/dashboard': return <Dashboard />
       case '/flows': return <Flows />
       case '/execution': return <FlowExecution />
+      case '/documents': return <Documents />
       case '/entities': return <Entities />
       case '/audit': return <AuditLog />
       case '/users': return <Users />

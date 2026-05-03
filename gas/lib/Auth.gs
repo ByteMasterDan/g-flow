@@ -231,8 +231,8 @@ function getAllUsers(token) {
           displayName: data[i][3],
           skills: parseSkills(data[i][4]),
           isActive: data[i][6] === true || data[i][6] === 'TRUE',
-          createdAt: data[i][7],
-          lastLogin: data[i][8],
+          createdAt: data[i][5],
+          lastLogin: data[i][7],
         });
       }
     }

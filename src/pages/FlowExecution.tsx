@@ -9,8 +9,9 @@ import { ColumnDef } from '@tanstack/react-table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { ArrowLeft, CheckCircle, XCircle, RotateCcw, Eye, FileText, RefreshCw } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { ArrowLeft, CheckCircle, XCircle, Eye, RefreshCw, Mail } from 'lucide-react'
+import { motion } from 'framer-motion'
+import EmailComposer from '../components/EmailComposer'
 
 interface Execution {
   executionId: string
@@ -34,6 +35,7 @@ export default function FlowExecution() {
   const [actionDialog, setActionDialog] = useState(false)
   const [actionType, setActionType] = useState<'APPROVE' | 'REJECT'>('APPROVE')
   const [actionComment, setActionComment] = useState('')
+  const [emailDialog, setEmailDialog] = useState(false)
 
   useEffect(() => { loadExecutions() }, [])
 
@@ -140,14 +142,25 @@ export default function FlowExecution() {
                 </div>
               </div>
             )}
-            {selectedExecution.status === 'Pending' && (
-              <div className="flex gap-2">
-                <Button onClick={() => { setActionType('APPROVE'); setActionDialog(true) }}><CheckCircle className="h-4 w-4 mr-2" /> Approve</Button>
-                <Button variant="destructive" onClick={() => { setActionType('REJECT'); setActionDialog(true) }}><XCircle className="h-4 w-4 mr-2" /> Reject</Button>
-              </div>
-            )}
+            <div className="flex gap-2 pt-2">
+              {selectedExecution.status === 'Pending' && (
+                <>
+                  <Button onClick={() => { setActionType('APPROVE'); setActionDialog(true) }}><CheckCircle className="h-4 w-4 mr-2" /> Approve</Button>
+                  <Button variant="destructive" onClick={() => { setActionType('REJECT'); setActionDialog(true) }}><XCircle className="h-4 w-4 mr-2" /> Reject</Button>
+                </>
+              )}
+              <Button variant="secondary" onClick={() => setEmailDialog(true)}><Mail className="h-4 w-4 mr-2" /> Compose Email</Button>
+            </div>
           </CardContent>
         </Card>
+
+        {selectedExecution && (
+          <EmailComposer 
+            open={emailDialog} 
+            onOpenChange={setEmailDialog} 
+            execution={selectedExecution} 
+          />
+        )}
 
         <Dialog open={actionDialog} onOpenChange={setActionDialog}>
           <DialogContent>
