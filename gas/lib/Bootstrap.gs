@@ -4,7 +4,7 @@
  */
 
 const SCHEMAS = {
-  USERS: ['Email', 'PasswordHash', 'Role', 'DisplayName', 'Skills', 'CreatedAt', 'IsActive', 'LastLogin', 'Notes'],
+  USERS: ['UserID', 'Email', 'PasswordHash', 'Role', 'DisplayName', 'Skills', 'CreatedAt', 'IsActive', 'LastLogin', 'Notes'],
   FLOWS: ['FlowID', 'FlowName', 'Description', 'Steps', 'FormData', 'FormLink', 'CreatedBy', 'CreatedAt', 'IsActive'],
   APPROVALS: ['ApprovalID', 'FlowID', 'CurrentStep', 'Status', 'SubmittedBy', 'EntityTag', 'Files', 'SubmittedAt', 'CompletedAt'],
   ENTITIES: ['EntityID', 'EntityType', 'DisplayName', 'VerifiedEmail', 'IsActive', 'CreatedAt'],
@@ -45,6 +45,25 @@ function setupSystem(spreadsheetId) {
 }
 
 /**
+ * Auto-heal missing sheets quickly if they are deleted manually.
+ */
+function ensureDatabase() {
+  try {
+    const ss = CONFIG.getSpreadsheet();
+    const required = Object.keys(SCHEMAS);
+    const existing = ss.getSheets().map(s => s.getName());
+    const missing = required.filter(name => !existing.includes(name));
+    
+    if (missing.length > 0) {
+      Logger.log('Auto-healing missing sheets: ' + missing.join(', '));
+      bootstrapDatabase();
+    }
+  } catch (e) {
+    Logger.log('Auto-heal check failed: ' + e.message);
+  }
+}
+
+/**
  * Bootstrap database - create required sheets and headers
  */
 function bootstrapDatabase() {
@@ -52,6 +71,13 @@ function bootstrapDatabase() {
 
   try {
     const ss = CONFIG.getSpreadsheet();
+
+    // Run structural migrations first
+    try {
+      runMigrations(ss, result);
+    } catch (e) {
+      result.errors.push('Migration Error: ' + e.message);
+    }
 
     // Create required sheets
     for (const sheetName of Object.keys(SCHEMAS)) {
@@ -117,7 +143,7 @@ function createDefaultAdmin(ss) {
   if (!sheet) return 'USERS sheet not found';
 
   const data = sheet.getDataRange().getValues();
-  const adminEmail = 'admin@g-flow.local';
+  const adminEmail = 'admin@davivienda.com';
 
   // Check if admin already exists
   for (let i = 1; i < data.length; i++) {
@@ -128,11 +154,13 @@ function createDefaultAdmin(ss) {
 
   // Create admin user
   const passwordHash = hashPassword('admin123');
+  const adminId = Utilities.getUuid();
   sheet.appendRow([
+    adminId,           // UserID
     adminEmail,        // Email
     passwordHash,      // PasswordHash
     'Admin',           // Role
-    'System Admin',    // DisplayName
+    'Admin Davivienda',// DisplayName
     'all',             // Skills
     new Date().toISOString(), // CreatedAt
     true,              // IsActive
@@ -153,6 +181,46 @@ function getHeaders(sheet) {
 }
 
 /**
+ * Automate tricky schema migrations before header syncs
+ */
+function runMigrations(ss, result) {
+  const usersSheet = ss.getSheetByName('USERS');
+  if (usersSheet) {
+    const data = usersSheet.getDataRange().getValues();
+    if (data.length > 1) {
+      const firstDataCol = String(data[1][0] || '').trim();
+      // If the first data column is an email, it means data is shifted from the old schema
+      if (firstDataCol.includes('@')) {
+        let updated = false;
+        
+        // Skip header row
+        for (let i = 1; i < data.length; i++) {
+          if (String(data[i][0] || '').includes('@')) {
+            // Shift data right by inserting a UUID at the beginning
+            data[i].unshift(Utilities.getUuid());
+            updated = true;
+          }
+        }
+        
+        if (updated) {
+          // Normalize lengths
+          const maxCols = Math.max(...data.map(r => r.length));
+          const balancedData = data.map(r => {
+             while(r.length < maxCols) r.push('');
+             return r;
+          });
+          
+          // Rewrite the sheet with repaired data
+          usersSheet.clearContents();
+          usersSheet.getRange(1, 1, balancedData.length, maxCols).setValues(balancedData);
+          result.sheets.push('Migrated USERS dataset to UserID schema offset');
+        }
+      }
+    }
+  }
+}
+
+/**
  * API: Force re-bootstrap (Admin only)
  */
 function forceBootstrap(token) {
@@ -160,4 +228,29 @@ function forceBootstrap(token) {
     return { success: false, error: 'Access denied' };
   }
   return bootstrapDatabase();
+}
+
+/**
+ * UTILITY: Reset database and seed default admin.
+ * Destructive action! Must be run directly from Apps Script Editor.
+ */
+function resetAndSeed() {
+  const ss = CONFIG.getSpreadsheet();
+  if (!ss) throw new Error('System not configured. Setup spreadsheet first.');
+  
+  // Clear all data rows (keep headers)
+  for (const sheetName of Object.keys(SCHEMAS)) {
+    const sheet = ss.getSheetByName(sheetName);
+    if (sheet) {
+      const lastRow = sheet.getLastRow();
+      if (lastRow > 1) {
+        sheet.deleteRows(2, lastRow - 1);
+      }
+    }
+  }
+  
+  // Re-bootstrap to ensure schemas and admin are created
+  const result = bootstrapDatabase();
+  Logger.log('Reset complete: ' + JSON.stringify(result));
+  return result;
 }

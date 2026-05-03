@@ -5,9 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Search, ExternalLink, FileText, Download } from 'lucide-react'
+import { Search, ExternalLink, FileText } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { format } from 'date-fns'
 
 interface DocumentFile {
   name: string
@@ -119,7 +118,7 @@ export default function Documents() {
               <CardContent className="pt-4 space-y-4">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span className="truncate max-w-[120px]" title={doc.submittedBy}>By: {doc.submittedBy}</span>
-                  <span>{format(new Date(doc.submittedAt), 'PP')}</span>
+                  <span>{new Date(doc.submittedAt).toLocaleDateString()}</span>
                 </div>
                 
                 <div className="space-y-2">

@@ -21,11 +21,20 @@ function include(filename) {
 
 function apiCall(jsonString) {
   const response = { success: false, data: null, error: null };
+  let action = 'unknown';
 
   try {
     const request = JSON.parse(jsonString);
-    const { action, params } = request;
+    action = request.action;
+    const params = request.params || {};
     const args = params || {};
+    
+    Logger.log('API Request: ' + action);
+
+    // Auto-heal missing sheets (if user dynamically deleted them post-setup)
+    if (action !== 'isSystemConfigured' && action !== 'setupSystem' && isSystemConfigured()) {
+      ensureDatabase();
+    }
 
     switch (action) {
       // System
@@ -69,7 +78,7 @@ function apiCall(jsonString) {
         response.data = createUser(args.token, args.email, args.password, args.role, args.displayName);
         break;
       case 'updateUser':
-        response.data = updateUser(args.token, args.email, args.updates);
+        response.data = updateUser(args.token, args.userId, args.updates);
         break;
 
       // Flows
@@ -153,12 +162,21 @@ function apiCall(jsonString) {
     }
 
     response.success = response.data && response.data.success !== undefined ? response.data.success : !response.error;
+    
+    // Add debug info if it fails
+    if (!response.success && !response.error) {
+      if (response.data && response.data.error) {
+        response.error = response.data.error;
+      }
+    }
   } catch (error) {
+    Logger.log('Unhandled API error in ' + action + ': ' + error.message);
     response.error = error.message || 'Unknown error';
     response.success = false;
   }
 
-  return response;
+  Logger.log('Response for ' + action + ': ' + JSON.stringify(response));
+  return JSON.stringify(response);
 }
 
 /**

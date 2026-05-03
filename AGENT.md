@@ -462,6 +462,47 @@ export default {
 
 ---
 
+## 9. CRITICAL: JSON Serialization Pattern (GAS ↔ React)
+
+> **NEVER return raw objects from `apiCall()` in Code.gs.** Always return `JSON.stringify(response)`.
+
+### Problem
+`google.script.run` uses an internal serialization mechanism that **silently crashes** when the response object contains:
+- Native `Date` objects (from Google Sheets cells)
+- Complex nested objects with mixed types
+- Circular references
+
+This causes an opaque `Unknown error` on the frontend with no stack trace.
+
+### Solution (MANDATORY for all GAS ↔ Frontend communication)
+
+**Backend (`Code.gs`):**
+```javascript
+function apiCall(jsonString) {
+  // ... process request ...
+  return JSON.stringify(response); // ← ALWAYS stringify
+}
+```
+
+**Frontend (`AuthGate.tsx` → `callGAS`):**
+```typescript
+run.withSuccessHandler((rawResult: any) => {
+  let result = rawResult;
+  if (typeof rawResult === 'string') {
+    result = JSON.parse(rawResult); // ← ALWAYS parse if string
+  }
+  // ... process result ...
+})
+```
+
+### Rules
+1. **All dates** in GAS responses must be ISO strings (`.toISOString()`) — never raw `Date` objects
+2. **All `apiCall` responses** must go through `JSON.stringify()` before returning
+3. **Frontend `callGAS`** must handle both string and object responses for backwards compatibility
+4. When adding new API endpoints, follow this pattern — do NOT return raw objects
+
+---
+
 *End of AGENT.md*
 
 ## 6b. Auth Gate Flow (React Frontend)

@@ -44,15 +44,31 @@ export function callGAS<T>(action: string, params: Record<string, unknown> = {})
         return
       }
 
-      run.withSuccessHandler((result: { success: boolean; data: T; error: string | null }) => {
+      console.log(`[GAS Request] ${action}`, params)
+      run.withSuccessHandler((rawResult: any) => {
+          let result = rawResult;
+          if (typeof rawResult === 'string') {
+            try {
+              result = JSON.parse(rawResult)
+            } catch (e) {
+              console.warn('[GAS Parser Warning] Failed to parse string result', e)
+            }
+          }
+          
+          console.log(`[GAS Response Success] ${action}:`, result)
           if (result && result.success && result.data) {
             resolve(result.data)
           } else {
-            const errMsg = result?.data?.error || result?.error || 'Unknown error'
+            console.error(`[GAS Logic Error] ${action}:`, result)
+            // Sometimes error is in result.error, sometimes in result.data.error, or as a string
+            const errMsg = result?.data?.error || result?.error || result?.message || 'Unknown error'
             reject(new Error(errMsg))
           }
         })
-        .withFailureHandler((error: Error) => reject(error))
+        .withFailureHandler((error: Error) => {
+          console.error(`[GAS Server Error] ${action}:`, error)
+          reject(error)
+        })
         .apiCall(JSON.stringify({ action, params }))
     } catch (e) {
       reject(e)

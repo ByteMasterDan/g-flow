@@ -50,9 +50,9 @@ function login(email, password) {
     const emailLower = email.toLowerCase().trim();
 
     for (let i = 1; i < data.length; i++) {
-      const rowEmail = (data[i][0] || '').toString().toLowerCase().trim();
-      const rowHash = (data[i][1] || '').toString();
-      const rowActive = data[i][6];
+      const rowEmail = (data[i][1] || '').toString().toLowerCase().trim();
+      const rowHash = (data[i][2] || '').toString();
+      const rowActive = data[i][7];
 
       if (rowEmail === emailLower) {
         // Check if active
@@ -71,15 +71,16 @@ function login(email, password) {
         
         // Save token to script properties
         PROPS.setProperty('SESSION_' + token, JSON.stringify({
+          userId: data[i][0],
           email: rowEmail,
-          role: data[i][2],
-          displayName: data[i][3],
-          skills: data[i][4],
+          role: data[i][3],
+          displayName: data[i][4],
+          skills: data[i][5],
           expiry: expiry.toISOString(),
         }));
 
         // Update last login
-        sheet.getRange(i + 1, 8).setValue(new Date());
+        sheet.getRange(i + 1, 9).setValue(new Date());
 
         // Log login action
         logAuditAction('', rowEmail, 'LOGIN', 'User logged in: ' + rowEmail);
@@ -88,10 +89,11 @@ function login(email, password) {
           success: true,
           token: token,
           user: {
-            email: data[i][0],
-            role: data[i][2],
-            displayName: data[i][3],
-            skills: parseSkills(data[i][4]),
+            userId: data[i][0],
+            email: data[i][1],
+            role: data[i][3],
+            displayName: data[i][4],
+            skills: parseSkills(data[i][5]),
           },
         };
       }
@@ -137,6 +139,7 @@ function getSession(token) {
 
     return {
       authenticated: true,
+      userId: session.userId,
       email: session.email,
       role: session.role,
       displayName: session.displayName,
@@ -185,14 +188,14 @@ function changePassword(token, oldPassword, newPassword) {
     const data = sheet.getDataRange().getValues();
 
     for (let i = 1; i < data.length; i++) {
-      if ((data[i][0] || '').toString().toLowerCase() === session.email.toLowerCase()) {
-        const currentHash = (data[i][1] || '').toString();
+      if ((data[i][1] || '').toString().toLowerCase() === session.email.toLowerCase()) {
+        const currentHash = (data[i][2] || '').toString();
         
         if (!verifyPassword(oldPassword, currentHash)) {
           return { success: false, error: 'Current password is incorrect' };
         }
 
-        sheet.getRange(i + 1, 2).setValue(hashPassword(newPassword));
+        sheet.getRange(i + 1, 3).setValue(hashPassword(newPassword));
         return { success: true, message: 'Password changed successfully' };
       }
     }
@@ -226,13 +229,14 @@ function getAllUsers(token) {
     for (let i = 1; i < data.length; i++) {
       if (data[i][0]) {
         users.push({
-          email: data[i][0],
-          role: data[i][2],
-          displayName: data[i][3],
-          skills: parseSkills(data[i][4]),
-          isActive: data[i][6] === true || data[i][6] === 'TRUE',
-          createdAt: data[i][5],
-          lastLogin: data[i][7],
+          userId: data[i][0],
+          email: data[i][1],
+          role: data[i][3],
+          displayName: data[i][4],
+          skills: parseSkills(data[i][5]),
+          isActive: data[i][7] === true || data[i][7] === 'TRUE',
+          createdAt: data[i][6],
+          lastLogin: data[i][8],
         });
       }
     }
@@ -246,7 +250,7 @@ function getAllUsers(token) {
 /**
  * API: Update user (Admin only)
  */
-function updateUser(token, email, updates) {
+function updateUser(token, userId, updates) {
   if (!hasRole(token, 'Admin')) {
     return { success: false, error: 'Access denied' };
   }
@@ -257,11 +261,12 @@ function updateUser(token, email, updates) {
     const data = sheet.getDataRange().getValues();
 
     for (let i = 1; i < data.length; i++) {
-      if ((data[i][0] || '').toString().toLowerCase() === email.toLowerCase()) {
-        if (updates.role) sheet.getRange(i + 1, 3).setValue(updates.role);
-        if (updates.displayName) sheet.getRange(i + 1, 4).setValue(updates.displayName);
-        if (updates.skills !== undefined) sheet.getRange(i + 1, 5).setValue(updates.skills);
-        if (updates.isActive !== undefined) sheet.getRange(i + 1, 7).setValue(updates.isActive);
+      if ((data[i][0] || '').toString() === userId.toString()) {
+        if (updates.email) sheet.getRange(i + 1, 2).setValue(updates.email);
+        if (updates.role) sheet.getRange(i + 1, 4).setValue(updates.role);
+        if (updates.displayName) sheet.getRange(i + 1, 5).setValue(updates.displayName);
+        if (updates.skills !== undefined) sheet.getRange(i + 1, 6).setValue(updates.skills);
+        if (updates.isActive !== undefined) sheet.getRange(i + 1, 8).setValue(updates.isActive);
         return { success: true, message: 'User updated' };
       }
     }
@@ -287,13 +292,15 @@ function createUser(token, email, password, role, displayName) {
 
     // Check if email already exists
     for (let i = 1; i < data.length; i++) {
-      if ((data[i][0] || '').toString().toLowerCase() === email.toLowerCase()) {
+      if ((data[i][1] || '').toString().toLowerCase() === email.toLowerCase()) {
         return { success: false, error: 'Email already exists' };
       }
     }
 
     // Add new user
+    const userId = Utilities.getUuid();
     sheet.appendRow([
+      userId,
       email,
       hashPassword(password),
       role || 'Operator',
@@ -301,8 +308,8 @@ function createUser(token, email, password, role, displayName) {
       '', // skills
       new Date().toISOString(),
       true, // isActive
-      new Date(),
       '', // lastLogin
+      '', // Notes
     ]);
 
     logAuditAction('', email, 'USER_CREATED', 'User created: ' + email);

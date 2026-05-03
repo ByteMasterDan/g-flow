@@ -13,6 +13,7 @@ import Documents from './pages/Documents'
 import Setup from './pages/Setup'
 import Login from './pages/Login'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { Toaster } from 'sonner'
 
 // Mocking Route Type locally if needed, or assume Sidebar handles it if passed
 const routes = [
@@ -113,6 +114,7 @@ function App() {
   return (
     <TooltipProvider>
       <AppContent />
+      <Toaster richColors position="bottom-right" />
     </TooltipProvider>
   )
 }
