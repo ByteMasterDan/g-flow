@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Plus, Trash2, GripVertical, Type, AlignLeft, Hash, Calendar, Mail, List, CheckSquare, Upload, Link } from 'lucide-react'
+import { Plus, Trash2, GripVertical, Type, AlignLeft, Hash, Calendar, Mail, List, CheckSquare, Upload, Link, ClipboardList, ChevronUp, ChevronDown, Check } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Separator } from '@/components/ui/separator'
 
@@ -33,11 +33,12 @@ const FIELD_TYPES = [
 interface FormBuilderProps {
   fields: FormField[]
   onChange: (fields: FormField[]) => void
+  onApply?: () => void
   flowId?: string
   formLink?: string
 }
 
-export default function FormBuilder({ fields, onChange, flowId, formLink }: FormBuilderProps) {
+export default function FormBuilder({ fields, onChange, onApply, flowId, formLink }: FormBuilderProps) {
   const addField = () => {
     const newField: FormField = {
       id: `field-${Date.now()}`,
@@ -75,11 +76,18 @@ export default function FormBuilder({ fields, onChange, flowId, formLink }: Form
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm flex items-center gap-2">
-            <span className="text-lg">📋</span> Form Builder
+            <ClipboardList className="h-4 w-4" /> Form Builder
           </CardTitle>
-          <Button size="sm" onClick={addField} variant="outline">
-            <Plus className="h-3 w-3 mr-1" /> Add Field
-          </Button>
+          <div className="flex items-center gap-2">
+            {onApply && (
+              <Button size="sm" onClick={onApply}>
+                <Check className="h-3 w-3 mr-1" /> Apply
+              </Button>
+            )}
+            <Button size="sm" onClick={addField} variant="outline">
+              <Plus className="h-3 w-3 mr-1" /> Add Field
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -120,7 +128,7 @@ export default function FormBuilder({ fields, onChange, flowId, formLink }: Form
                       onClick={() => moveField(index, 'up')}
                       disabled={index === 0}
                     >
-                      ↑
+                      <ChevronUp className="h-3 w-3" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -129,7 +137,7 @@ export default function FormBuilder({ fields, onChange, flowId, formLink }: Form
                       onClick={() => moveField(index, 'down')}
                       disabled={index === fields.length - 1}
                     >
-                      ↓
+                      <ChevronDown className="h-3 w-3" />
                     </Button>
                     <Button
                       variant="ghost"

@@ -19,7 +19,7 @@ import ApprovalNode from '../components/workflow/ApprovalNode'
 import ArchiveNode from '../components/workflow/ArchiveNode'
 import {
   Plus, Edit, Trash2, ArrowLeft, Save, GripVertical,
-  Copy, Play, ClipboardList, Database, Mail, CheckCircle, FolderArchive, Square, RefreshCw
+  Copy, Play, ClipboardList, Database, Mail, CheckCircle, FolderArchive, Square, RefreshCw, Loader2, XCircle
 } from 'lucide-react'
 import ReactFlow, {
   Node, addEdge, Background, Controls, MiniMap,
@@ -81,6 +81,7 @@ export default function Flows() {
   const [startFlowId, setStartFlowId] = useState('')
   const [formModalOpen, setFormModalOpen] = useState(false)
   const [usersList, setUsersList] = useState<any[]>([])
+  const [saveProgress, setSaveProgress] = useState<{ steps: { label: string; done: boolean; error?: string }[]; currentStep: number; complete: boolean } | null>(null)
 
   useEffect(() => { loadInitialData() }, [])
 
@@ -130,7 +131,7 @@ export default function Flows() {
       const loadedNodes: Node[] = flow.steps.map((s: any) => ({
         id: s.id, type: s.type, position: s.position || { x: 400, y: 200 },
         data: { label: s.name, assignee: s.assigneeValue, assignees: s.assignees || [], skills: s.skills, recipient: s.recipient,
-                to: s.to, cc: s.cc, bcc: s.bcc, from: s.from, fields: s.fields,
+                to: s.to, cc: s.cc, bcc: s.bcc, from: s.from, fields: s.fields, fieldMapping: s.fieldMapping || [],
                 spreadsheetId: s.spreadsheetId, sheetName: s.sheetName, folderPath: s.folderPath,
                 subject: s.subject, body: s.body },
       }))
@@ -188,6 +189,14 @@ export default function Flows() {
   const handleSave = async () => {
     if (!flowName.trim()) return alert('Flow name required')
     setSaving(true)
+
+    const progressSteps = [
+      { label: 'Saving flow...', done: false },
+      { label: 'Sending notifications...', done: false },
+      { label: 'Complete!', done: false },
+    ]
+    setSaveProgress({ steps: progressSteps, currentStep: 0, complete: false })
+
     try {
       const steps = nodes.map(n => ({
         id: n.id, type: n.type, name: n.data.label,
@@ -198,15 +207,32 @@ export default function Flows() {
         spreadsheetId: n.data.spreadsheetId, sheetName: n.data.sheetName,
         folderPath: n.data.folderPath, subject: n.data.subject, body: n.data.body,
       }))
+
       if (selectedFlow) {
         await callGAS('updateFlow', { token: user?.token, flowId: selectedFlow.flowId, flowData: { name: flowName, description: flowDescription, steps } })
       } else {
         await callGAS('createFlow', { token: user?.token, flowData: { name: flowName, description: flowDescription, steps } })
       }
+      setSaveProgress(prev => prev ? { ...prev, steps: prev.steps.map((s, i) => i === 0 ? { ...s, done: true } : s), currentStep: 1 } : null)
+
+      await new Promise(r => setTimeout(r, 600))
+      setSaveProgress(prev => prev ? { ...prev, steps: prev.steps.map((s, i) => i <= 1 ? { ...s, done: true } : s), currentStep: 2 } : null)
+
+      await new Promise(r => setTimeout(r, 400))
+      setSaveProgress(prev => prev ? { ...prev, steps: prev.steps.map(s => ({ ...s, done: true })), currentStep: 3, complete: true } : null)
+
       await loadInitialData()
-      setMode('list')
-    } catch (e) { console.error('Save error:', e); alert('Failed to save') }
-    finally { setSaving(false) }
+    } catch (e) {
+      console.error('Save error:', e)
+      setSaveProgress(prev => prev ? { ...prev, steps: prev.steps.map((s, i) => i === prev.currentStep ? { ...s, error: 'Failed' } : s), complete: true } : null)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleCloseSaveProgress = () => {
+    setSaveProgress(null)
+    setMode('list')
   }
 
   const handleDelete = async (flowId: string) => {
@@ -513,8 +539,41 @@ export default function Flows() {
               <FormBuilder 
                 fields={selectedNode.data.fields || []}
                 onChange={fields => updateNodeData('fields', fields)}
+                onApply={() => setFormModalOpen(false)}
                 formLink={selectedFlow?.formLink}
               />
+            )}
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={!!saveProgress} onOpenChange={() => {}}>
+          <DialogContent className="max-w-sm" onPointerDownOutside={e => e.preventDefault()} onEscapeKeyDown={e => e.preventDefault()}>
+            <DialogHeader>
+              <DialogTitle className="text-base">Save Progress</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 py-2">
+              {saveProgress?.steps.map((step, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  {step.error ? (
+                    <XCircle className="h-5 w-5 text-destructive shrink-0" />
+                  ) : step.done ? (
+                    <CheckCircle className="h-5 w-5 text-green-500 shrink-0" />
+                  ) : i === saveProgress.currentStep ? (
+                    <Loader2 className="h-5 w-5 text-primary animate-spin shrink-0" />
+                  ) : (
+                    <div className="h-5 w-5 rounded-full border-2 border-muted shrink-0" />
+                  )}
+                  <span className={`text-sm ${step.error ? 'text-destructive' : step.done ? 'text-foreground' : i === saveProgress.currentStep ? 'text-primary' : 'text-muted-foreground'}`}>
+                    {step.label}
+                    {step.error && ' - ' + step.error}
+                  </span>
+                </div>
+              ))}
+            </div>
+            {saveProgress?.complete && (
+              <Button onClick={handleCloseSaveProgress} className="w-full">
+                Done
+              </Button>
             )}
           </DialogContent>
         </Dialog>
