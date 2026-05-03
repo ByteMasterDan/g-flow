@@ -75,6 +75,8 @@ function createFlow(token, flowData) {
 
     logAuditAction(flowId, session.email, 'CREATED', 'Flow created: ' + flowData.name);
 
+    notifyAssignedUsers(flowId, flowData.name, flowData.steps);
+
     return { success: true, flowId: flowId, message: 'Flow created' };
   } catch (e) {
     return { success: false, error: e.message };
@@ -102,6 +104,11 @@ function updateFlow(token, flowId, flowData) {
         if (flowData.formData !== undefined) sheet.getRange(i + 1, 5).setValue(JSON.stringify(flowData.formData));
         if (flowData.isActive !== undefined) sheet.getRange(i + 1, 9).setValue(flowData.isActive);
         logAuditAction(flowId, session.email, 'UPDATED', 'Flow updated: ' + flowId);
+
+        if (flowData.steps) {
+          notifyAssignedUsers(flowId, flowData.name || data[i][1], flowData.steps);
+        }
+
         return { success: true, message: 'Flow updated' };
       }
     }
@@ -178,5 +185,45 @@ function getFlowById(token, flowId) {
     return { success: false, error: 'Flow not found' };
   } catch (e) {
     return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Send email notification to users assigned to form steps
+ */
+function notifyAssignedUsers(flowId, flowName, steps) {
+  try {
+    if (!steps || !Array.isArray(steps)) return;
+
+    var allAssignees = [];
+    for (var i = 0; i < steps.length; i++) {
+      var step = steps[i];
+      if (step.type === 'form' && step.assignees && Array.isArray(step.assignees)) {
+        for (var j = 0; j < step.assignees.length; j++) {
+          if (allAssignees.indexOf(step.assignees[j]) === -1) {
+            allAssignees.push(step.assignees[j]);
+          }
+        }
+      }
+    }
+
+    if (allAssignees.length === 0) return;
+
+    var subject = '[G-Flow] New form assigned: ' + flowName;
+    var body = 'You have been assigned to a form in the workflow "' + flowName + '".\n\n' +
+               'Please log in to G-Flow to view and fill out your assigned forms.\n\n' +
+               'Flow ID: ' + flowId + '\n' +
+               'Flow Name: ' + flowName + '\n\n' +
+               'This is an automated notification from G-Flow Approval System.';
+
+    for (var k = 0; k < allAssignees.length; k++) {
+      try {
+        GmailApp.sendEmail(allAssignees[k], subject, body);
+      } catch (emailErr) {
+        Logger.log('Failed to send notification to ' + allAssignees[k] + ': ' + emailErr.message);
+      }
+    }
+  } catch (e) {
+    Logger.log('notifyAssignedUsers error: ' + e.message);
   }
 }

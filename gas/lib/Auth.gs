@@ -215,8 +215,8 @@ function getAllUsers(token) {
     if (!session.authenticated) {
       return { success: false, error: session.error || 'Not authenticated' };
     }
-    if (session.role !== 'Admin') {
-      return { success: false, error: 'Access denied - Admin role required' };
+    if (!['Admin', 'SuperApprover'].includes(session.role)) {
+      return { success: false, error: 'Access denied - Admin or SuperApprover role required' };
     }
 
     const ss = CONFIG.getSpreadsheet();

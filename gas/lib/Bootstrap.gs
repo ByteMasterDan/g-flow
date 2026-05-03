@@ -7,7 +7,7 @@ const SCHEMAS = {
   USERS: ['UserID', 'Email', 'PasswordHash', 'Role', 'DisplayName', 'Skills', 'CreatedAt', 'IsActive', 'LastLogin', 'Notes'],
   FLOWS: ['FlowID', 'FlowName', 'Description', 'Steps', 'FormData', 'FormLink', 'CreatedBy', 'CreatedAt', 'IsActive'],
   APPROVALS: ['ApprovalID', 'FlowID', 'CurrentStep', 'Status', 'SubmittedBy', 'EntityTag', 'Files', 'SubmittedAt', 'CompletedAt'],
-  ENTITIES: ['EntityID', 'EntityType', 'DisplayName', 'VerifiedEmail', 'IsActive', 'CreatedAt'],
+  CLIENTS: ['ClientID', 'ClientType', 'DisplayName', 'VerifiedEmail', 'IsActive', 'CreatedAt'],
   SKILLS: ['SkillID', 'SkillName', 'Description', 'IsActive'],
   AUDIT_LOG: ['Timestamp', 'ApprovalID', 'ActorEmail', 'Action', 'Details', 'Metadata'],
 };
@@ -217,6 +217,16 @@ function runMigrations(ss, result) {
         }
       }
     }
+  }
+
+  // Migrate ENTITIES to CLIENT_DIRECTORY if it exists
+  const entitiesSheet = ss.getSheetByName('ENTITIES');
+  if (entitiesSheet) {
+    entitiesSheet.setName('CLIENTS');
+    result.sheets.push('Renamed ENTITIES to CLIENTS');
+    const expected = SCHEMAS.CLIENTS;
+    entitiesSheet.getRange(1, 1, 1, expected.length).setValues([expected]).setFontWeight('bold');
+    result.sheets.push('Synced CLIENTS headers');
   }
 }
 

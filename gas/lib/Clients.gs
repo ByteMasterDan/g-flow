@@ -1,27 +1,27 @@
 /**
- * Entities.gs - CRUD Operations for Entity Directory (DLP)
+ * Clients.gs - CRUD Operations for Client Directory
  */
 
 /**
- * API: Get all entities
+ * API: Get all clients
  */
-function getEntities(token) {
+function getClients(token) {
   const session = getSession(token);
   if (!session.authenticated) return { success: false, error: 'Not authenticated' };
 
   try {
     const ss = CONFIG.getSpreadsheet();
-    const sheet = ss.getSheetByName('ENTITIES');
-    if (!sheet) return { success: true, entities: [] };
+    const sheet = ss.getSheetByName('CLIENTS');
+    if (!sheet) return { success: true, clients: [] };
 
     const data = sheet.getDataRange().getValues();
-    const entities = [];
+    const clients = [];
 
     for (let i = 1; i < data.length; i++) {
       if (data[i][0]) {
-        entities.push({
-          entityId: data[i][0],
-          entityType: data[i][1],
+        clients.push({
+          clientId: data[i][0],
+          clientType: data[i][1],
           displayName: data[i][2],
           verifiedEmail: data[i][3],
           isActive: data[i][4] === true || data[i][4] === 'TRUE',
@@ -30,93 +30,93 @@ function getEntities(token) {
       }
     }
 
-    return { success: true, entities: entities };
+    return { success: true, clients: clients };
   } catch (e) {
     return { success: false, error: e.message };
   }
 }
 
 /**
- * API: Create a new entity
+ * API: Create a new client
  */
-function createEntity(token, entityData) {
+function createClient(token, clientData) {
   const session = getSession(token);
   if (!session.authenticated) return { success: false, error: 'Not authenticated' };
   if (!hasRole(token, ['Admin', 'Operator'])) return { success: false, error: 'Access denied' };
 
   try {
     const ss = CONFIG.getSpreadsheet();
-    const sheet = ss.getSheetByName('ENTITIES');
-    if (!sheet) return { success: false, error: 'ENTITIES sheet not found' };
+    const sheet = ss.getSheetByName('CLIENTS');
+    if (!sheet) return { success: false, error: 'CLIENTS sheet not found' };
 
-    const entityId = 'ENT-' + new Date().getTime();
+    const clientId = 'CLI-' + new Date().getTime();
     const now = new Date().toISOString();
 
     sheet.appendRow([
-      entityId,
-      entityData.type || 'Client',
-      entityData.name,
-      entityData.email,
+      clientId,
+      clientData.type || 'Natural',
+      clientData.name,
+      clientData.email,
       true,
       now,
     ]);
 
-    return { success: true, entityId: entityId, message: 'Entity created' };
+    return { success: true, clientId: clientId, message: 'Client created' };
   } catch (e) {
     return { success: false, error: e.message };
   }
 }
 
 /**
- * API: Update an entity
+ * API: Update a client
  */
-function updateEntity(token, entityId, entityData) {
+function updateClient(token, clientId, clientData) {
   const session = getSession(token);
   if (!session.authenticated) return { success: false, error: 'Not authenticated' };
   if (!hasRole(token, ['Admin', 'Operator'])) return { success: false, error: 'Access denied' };
 
   try {
     const ss = CONFIG.getSpreadsheet();
-    const sheet = ss.getSheetByName('ENTITIES');
+    const sheet = ss.getSheetByName('CLIENTS');
     const data = sheet.getDataRange().getValues();
 
     for (let i = 1; i < data.length; i++) {
-      if (data[i][0] === entityId) {
-        if (entityData.type) sheet.getRange(i + 1, 2).setValue(entityData.type);
-        if (entityData.name) sheet.getRange(i + 1, 3).setValue(entityData.name);
-        if (entityData.email) sheet.getRange(i + 1, 4).setValue(entityData.email);
-        if (entityData.isActive !== undefined) sheet.getRange(i + 1, 5).setValue(entityData.isActive);
-        return { success: true, message: 'Entity updated' };
+      if (data[i][0] === clientId) {
+        if (clientData.type) sheet.getRange(i + 1, 2).setValue(clientData.type);
+        if (clientData.name) sheet.getRange(i + 1, 3).setValue(clientData.name);
+        if (clientData.email) sheet.getRange(i + 1, 4).setValue(clientData.email);
+        if (clientData.isActive !== undefined) sheet.getRange(i + 1, 5).setValue(clientData.isActive);
+        return { success: true, message: 'Client updated' };
       }
     }
 
-    return { success: false, error: 'Entity not found' };
+    return { success: false, error: 'Client not found' };
   } catch (e) {
     return { success: false, error: e.message };
   }
 }
 
 /**
- * API: Delete an entity (soft delete)
+ * API: Delete a client (soft delete)
  */
-function deleteEntity(token, entityId) {
+function deleteClient(token, clientId) {
   const session = getSession(token);
   if (!session.authenticated) return { success: false, error: 'Not authenticated' };
   if (!hasRole(token, ['Admin'])) return { success: false, error: 'Access denied' };
 
   try {
     const ss = CONFIG.getSpreadsheet();
-    const sheet = ss.getSheetByName('ENTITIES');
+    const sheet = ss.getSheetByName('CLIENTS');
     const data = sheet.getDataRange().getValues();
 
     for (let i = 1; i < data.length; i++) {
-      if (data[i][0] === entityId) {
+      if (data[i][0] === clientId) {
         sheet.getRange(i + 1, 5).setValue(false);
-        return { success: true, message: 'Entity deactivated' };
+        return { success: true, message: 'Client deactivated' };
       }
     }
 
-    return { success: false, error: 'Entity not found' };
+    return { success: false, error: 'Client not found' };
   } catch (e) {
     return { success: false, error: e.message };
   }

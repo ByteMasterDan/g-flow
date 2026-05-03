@@ -98,18 +98,18 @@ function apiCall(jsonString) {
         response.data = deleteFlow(args.token, args.flowId);
         break;
 
-      // Entities
-      case 'getEntities':
-        response.data = getEntities(args.token);
+      // Clients
+      case 'getClients':
+        response.data = getClients(args.token);
         break;
-      case 'createEntity':
-        response.data = createEntity(args.token, args.entityData);
+      case 'createClient':
+        response.data = createClient(args.token, args.clientData);
         break;
-      case 'updateEntity':
-        response.data = updateEntity(args.token, args.entityId, args.entityData);
+      case 'updateClient':
+        response.data = updateClient(args.token, args.clientId, args.clientData);
         break;
-      case 'deleteEntity':
-        response.data = deleteEntity(args.token, args.entityId);
+      case 'deleteClient':
+        response.data = deleteClient(args.token, args.clientId);
         break;
 
       // Audit
@@ -150,6 +150,20 @@ function apiCall(jsonString) {
         break;
       case 'getDocuments':
         response.data = getDocuments(args.token, args.filterEntity);
+        break;
+
+      // My Assigned Forms
+      case 'getMyAssignedForms':
+        response.data = getMyAssignedForms(args.token);
+        break;
+      case 'claimForm':
+        response.data = claimForm(args.token, args.executionId);
+        break;
+      case 'releaseForm':
+        response.data = releaseForm(args.token, args.executionId);
+        break;
+      case 'submitFormData':
+        response.data = submitFormData(args.token, args.executionId, args.formData);
         break;
 
       // Bootstrap
@@ -212,13 +226,13 @@ function getDashboardStats(token) {
       }
     }
 
-    // Count entities
-    const entitiesSheet = ss.getSheetByName('ENTITIES');
-    let totalEntities = 0;
-    if (entitiesSheet) {
-      const entitiesData = entitiesSheet.getDataRange().getValues();
-      for (let i = 1; i < entitiesData.length; i++) {
-        if (entitiesData[i][4] === true || entitiesData[i][4] === 'TRUE') totalEntities++;
+    // Count clients
+    const clientsSheet = ss.getSheetByName('CLIENTS');
+    let totalClients = 0;
+    if (clientsSheet) {
+      const clientsData = clientsSheet.getDataRange().getValues();
+      for (let i = 1; i < clientsData.length; i++) {
+        if (clientsData[i][4] === true || clientsData[i][4] === 'TRUE') totalClients++;
       }
     }
 
@@ -254,7 +268,7 @@ function getDashboardStats(token) {
         approvedToday,
         rejectedToday,
         activeFlows,
-        totalEntities,
+        totalClients,
         totalUsers,
       },
       recentLogs: recentLogs.reverse(),

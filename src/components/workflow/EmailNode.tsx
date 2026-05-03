@@ -1,6 +1,7 @@
 import { Handle, Position, NodeProps } from 'reactflow'
 import { motion } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
+import { Mail } from 'lucide-react'
 
 export default function EmailNode({ data, selected }: NodeProps) {
   return (
@@ -15,7 +16,7 @@ export default function EmailNode({ data, selected }: NodeProps) {
       <Handle type="target" position={Position.Top} className="!bg-blue-400 !w-3 !h-3" />
       <div className="flex items-center gap-2 mb-1">
         <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
-          <span className="text-blue-500 text-sm">✉</span>
+          <Mail className="h-4 w-4 text-blue-500" />
         </div>
         <div className="flex-1">
           <div className="text-sm font-semibold text-foreground">{data.label || 'Send Email'}</div>

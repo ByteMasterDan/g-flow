@@ -9,7 +9,7 @@ import { ColumnDef } from '@tanstack/react-table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { ArrowLeft, CheckCircle, XCircle, Eye, RefreshCw, Mail } from 'lucide-react'
+import { ArrowLeft, CheckCircle, XCircle, Eye, RefreshCw, Mail, Workflow } from 'lucide-react'
 import { motion } from 'framer-motion'
 import EmailComposer from '../components/EmailComposer'
 
@@ -178,20 +178,85 @@ export default function FlowExecution() {
 
   // LIST VIEW
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-foreground">Flow Executions</h2>
-        <Button variant="outline" onClick={loadExecutions}><RefreshCw className="h-4 w-4 mr-2" /> Refresh</Button>
+        <div>
+          <h2 className="text-xl font-bold text-foreground">Available Workflows</h2>
+          <p className="text-sm text-muted-foreground font-medium">Select a workflow to view its history or start a new execution</p>
+        </div>
+        <Button variant="outline" onClick={loadExecutions} className="bg-card hover:bg-muted transition-colors">
+          <RefreshCw className="h-4 w-4 mr-2" /> Refresh
+        </Button>
       </div>
-      <Card>
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="flex items-center justify-center h-32"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
-          ) : (
-            <DataTable columns={columns} data={executions} searchKey="flowName" searchPlaceholder="Search executions..." />
-          )}
-        </CardContent>
-      </Card>
+
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1,2,3].map(i => <Card key={i} className="animate-pulse h-40 bg-muted/50 border-none shadow-none" />)}
+        </div>
+      ) : executions.length === 0 ? (
+        <Card className="p-12 text-center border-dashed border-2 bg-muted/20">
+          <Workflow className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground">No active workflows found</h3>
+          <p className="text-sm text-muted-foreground">Start by creating your first process in the Flows tab.</p>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from(new Set(executions.map(e => e.flowId))).map(flowId => {
+            const flowExecs = executions.filter(e => e.flowId === flowId);
+            const latest = flowExecs[0];
+            return (
+              <motion.div 
+                key={flowId} 
+                whileHover={{ y: -4 }}
+                transition={{ type: 'spring', stiffness: 300 }}
+              >
+                <Card 
+                  className="cursor-pointer hover:shadow-xl transition-all duration-300 border-l-4 border-l-primary overflow-hidden group"
+                  onClick={() => openDetail(latest)}
+                >
+                  <CardHeader className="pb-3 bg-gradient-to-br from-primary/5 to-transparent">
+                    <div className="flex justify-between items-start">
+                      <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+                        <Workflow className="h-5 w-5 text-primary" />
+                      </div>
+                      <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/20">
+                        {flowExecs.length} total
+                      </Badge>
+                    </div>
+                    <CardTitle className="mt-3 text-lg">{latest.flowName}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-2">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
+                        <span className="text-xs text-muted-foreground font-medium">Latest: {latest.status}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Last activity</p>
+                        <p className="text-xs font-semibold">{new Date(latest.startedAt).toLocaleDateString()}</p>
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                         <Button size="sm" className="w-full text-xs h-8">View History</Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )
+          })}
+        </div>
+      )}
+
+      {executions.length > 0 && (
+        <div className="mt-8">
+          <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-4">All Recent Executions</h3>
+          <Card className="border-none shadow-sm overflow-hidden">
+            <CardContent className="p-0">
+              <DataTable columns={columns} data={executions} searchKey="flowName" searchPlaceholder="Filter executions..." />
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </motion.div>
   )
 }

@@ -12,7 +12,7 @@ interface DashboardStats {
   approvedToday: number
   rejectedToday: number
   activeFlows: number
-  totalEntities: number
+  totalClients: number
   totalUsers: number
 }
 
@@ -54,7 +54,7 @@ export default function Dashboard() {
     { label: 'Pending Approvals', value: stats?.pendingApprovals ?? 0, icon: Clock, color: 'text-yellow-500', bgColor: 'bg-yellow-500/10' },
     { label: 'Approved Today', value: stats?.approvedToday ?? 0, icon: CheckCircle, color: 'text-green-500', bgColor: 'bg-green-500/10' },
     { label: 'Active Flows', value: stats?.activeFlows ?? 0, icon: Workflow, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
-    { label: 'Total Entities', value: stats?.totalEntities ?? 0, icon: Building2, color: 'text-purple-500', bgColor: 'bg-purple-500/10' },
+    { label: 'Total Clients', value: stats?.totalClients ?? 0, icon: Building2, color: 'text-purple-500', bgColor: 'bg-purple-500/10' },
     { label: 'Total Users', value: stats?.totalUsers ?? 0, icon: Users, color: 'text-cyan-500', bgColor: 'bg-cyan-500/10' },
     { label: 'Rejected Today', value: stats?.rejectedToday ?? 0, icon: XCircle, color: 'text-red-500', bgColor: 'bg-red-500/10' },
   ]

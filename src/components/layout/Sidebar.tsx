@@ -15,6 +15,8 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
+  FileText,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -28,8 +30,10 @@ interface Route {
 const routeIcons: Record<string, React.ReactNode> = {
   '/dashboard': <LayoutDashboard className="h-5 w-5" />,
   '/flows': <Workflow className="h-5 w-5" />,
+  '/my-forms': <ClipboardList className="h-5 w-5" />,
   '/execution': <CheckCircle className="h-5 w-5" />,
-  '/entities': <Building2 className="h-5 w-5" />,
+  '/documents': <FileText className="h-5 w-5" />,
+  '/clients': <Building2 className="h-5 w-5" />,
   '/audit': <ScrollText className="h-5 w-5" />,
   '/users': <Users className="h-5 w-5" />,
   '/settings': <Settings className="h-5 w-5" />,

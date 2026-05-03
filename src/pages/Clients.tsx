@@ -8,87 +8,83 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
 import { DataTable } from '@/components/ui/data-table'
 import { ColumnDef } from '@tanstack/react-table'
 import { Plus, Edit, Trash2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 
-interface Entity {
-  entityId: string
-  entityType: string
+interface Client {
+  clientId: string
+  clientType: string
   displayName: string
   verifiedEmail: string
   isActive: boolean
   createdAt: string
 }
 
-export default function Entities() {
+export default function Clients() {
   const { user } = useAuthStore()
-  const [entities, setEntities] = useState<Entity[]>([])
-  const [loading, setLoading] = useState(true)
+  const [clients, setClients] = useState<Client[]>([])
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingEntity, setEditingEntity] = useState<Entity | null>(null)
-  const [formData, setFormData] = useState({ type: 'Client', name: '', email: '' })
+  const [editingClient, setEditingClient] = useState<Client | null>(null)
+  const [formData, setFormData] = useState({ type: 'Natural', name: '', email: '' })
 
-  useEffect(() => { loadEntities() }, [])
+  useEffect(() => { loadClients() }, [])
 
-  const loadEntities = async () => {
+  const loadClients = async () => {
     try {
-      const result = await callGAS<{ success: boolean; entities: Entity[] }>('getEntities', { token: user?.token })
-      if (result.success) setEntities(result.entities)
+      const result = await callGAS<{ success: boolean; clients: Client[] }>('getClients', { token: user?.token })
+      if (result.success) setClients(result.clients)
     } catch (e) {
-      console.error('Load entities error:', e)
-    } finally {
-      setLoading(false)
+      console.error('Load clients error:', e)
     }
   }
 
   const handleSave = async () => {
     try {
-      if (editingEntity) {
-        await callGAS('updateEntity', {
+      if (editingClient) {
+        await callGAS('updateClient', {
           token: user?.token,
-          entityId: editingEntity.entityId,
-          entityData: { type: formData.type, name: formData.name, email: formData.email },
+          clientId: editingClient.clientId,
+          clientData: { type: formData.type, name: formData.name, email: formData.email },
         })
       } else {
-        await callGAS('createEntity', {
+        await callGAS('createClient', {
           token: user?.token,
-          entityData: { type: formData.type, name: formData.name, email: formData.email },
+          clientData: { type: formData.type, name: formData.name, email: formData.email },
         })
       }
       setDialogOpen(false)
-      setEditingEntity(null)
-      setFormData({ type: 'Client', name: '', email: '' })
-      loadEntities()
+      setEditingClient(null)
+      setFormData({ type: 'Natural', name: '', email: '' })
+      loadClients()
     } catch (e) {
-      console.error('Save entity error:', e)
+      console.error('Save client error:', e)
     }
   }
 
-  const handleDelete = async (entityId: string) => {
-    if (!confirm('Are you sure you want to deactivate this entity?')) return
+  const handleDelete = async (clientId: string) => {
+    if (!confirm('Are you sure you want to deactivate this client?')) return
     try {
-      await callGAS('deleteEntity', { token: user?.token, entityId })
-      loadEntities()
+      await callGAS('deleteClient', { token: user?.token, clientId })
+      loadClients()
     } catch (e) {
-      console.error('Delete entity error:', e)
+      console.error('Delete client error:', e)
     }
   }
 
-  const openEdit = (entity: Entity) => {
-    setEditingEntity(entity)
-    setFormData({ type: entity.entityType, name: entity.displayName, email: entity.verifiedEmail })
+  const openEdit = (client: Client) => {
+    setEditingClient(client)
+    setFormData({ type: client.clientType, name: client.displayName, email: client.verifiedEmail })
     setDialogOpen(true)
   }
 
-  const columns: ColumnDef<Entity>[] = [
-    { accessorKey: 'entityId', header: 'ID' },
+  const columns: ColumnDef<Client>[] = [
+    { accessorKey: 'clientId', header: 'ID' },
     {
-      accessorKey: 'entityType',
+      accessorKey: 'clientType',
       header: 'Type',
-      cell: ({ row }) => <Badge variant="outline">{row.original.entityType}</Badge>,
+      cell: ({ row }) => <Badge variant="outline">{row.original.clientType}</Badge>,
     },
     { accessorKey: 'displayName', header: 'Name' },
     { accessorKey: 'verifiedEmail', header: 'Verified Email' },
@@ -109,7 +105,7 @@ export default function Entities() {
           <Button variant="ghost" size="sm" onClick={() => openEdit(row.original)}>
             <Edit className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => handleDelete(row.original.entityId)}>
+          <Button variant="ghost" size="sm" onClick={() => handleDelete(row.original.clientId)}>
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
         </div>
@@ -120,16 +116,16 @@ export default function Entities() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Entity Directory (DLP)</h2>
+        <h2 className="text-lg font-semibold">Client Directory</h2>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => { setEditingEntity(null); setFormData({ type: 'Client', name: '', email: '' }) }}>
-              <Plus className="h-4 w-4 mr-2" /> New Entity
+            <Button onClick={() => { setEditingClient(null); setFormData({ type: 'Natural', name: '', email: '' }) }}>
+              <Plus className="h-4 w-4 mr-2" /> New Client
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editingEntity ? 'Edit Entity' : 'Add New Entity'}</DialogTitle>
+              <DialogTitle>{editingClient ? 'Edit Client' : 'Add New Client'}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -137,10 +133,8 @@ export default function Entities() {
                 <Select value={formData.type} onValueChange={v => setFormData({ ...formData, type: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Employee">Employee</SelectItem>
-                    <SelectItem value="Client">Client</SelectItem>
-                    <SelectItem value="Vendor">Vendor</SelectItem>
-                    <SelectItem value="Partner">Partner</SelectItem>
+                    <SelectItem value="Natural">Persona Natural</SelectItem>
+                    <SelectItem value="Jurídico">Persona Jurídica</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -164,7 +158,7 @@ export default function Entities() {
 
       <Card>
         <CardContent className="p-0">
-          <DataTable columns={columns} data={entities} searchKey="displayName" searchPlaceholder="Search entities..." />
+          <DataTable columns={columns} data={clients} searchKey="displayName" searchPlaceholder="Search clients..." />
         </CardContent>
       </Card>
     </motion.div>

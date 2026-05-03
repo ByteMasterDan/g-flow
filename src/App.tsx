@@ -5,11 +5,12 @@ import Sidebar from './components/layout/Sidebar'
 import Dashboard from './pages/Dashboard'
 import Flows from './pages/Flows'
 import FlowExecution from './pages/FlowExecution'
-import Entities from './pages/Entities'
+import Clients from './pages/Clients'
 import AuditLog from './pages/AuditLog'
 import Users from './pages/Users'
 import Settings from './pages/Settings'
 import Documents from './pages/Documents'
+import MyForms from './pages/MyForms'
 import Setup from './pages/Setup'
 import Login from './pages/Login'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -19,9 +20,10 @@ import { Toaster } from 'sonner'
 const routes = [
   { path: '/dashboard', label: 'Dashboard', roles: ['Admin', 'SuperApprover', 'Approver', 'Operator'] },
   { path: '/flows', label: 'Flows', roles: ['Admin', 'SuperApprover', 'Approver'] },
+  { path: '/my-forms', label: 'My Forms', roles: ['Admin', 'SuperApprover', 'Approver', 'Operator'] },
   { path: '/execution', label: 'Approvals', roles: ['Admin', 'SuperApprover', 'Approver'] },
   { path: '/documents', label: 'Documents', roles: ['Admin', 'SuperApprover', 'Operator'] },
-  { path: '/entities', label: 'Entity Directory', roles: ['Admin', 'Operator'] },
+  { path: '/clients', label: 'Client Directory', roles: ['Admin', 'Operator'] },
   { path: '/audit', label: 'Audit Log', roles: ['Admin', 'SuperApprover'] },
   { path: '/users', label: 'User Management', roles: ['Admin'] },
   { path: '/settings', label: 'Settings', roles: ['Admin', 'SuperApprover', 'Approver', 'Operator'] },
@@ -70,16 +72,17 @@ function AppContent() {
   }
 
   if (!user?.authenticated || !user.email || !user.role || !user.displayName) {
-    return <Login onSuccess={(token, userData) => login(token, userData)} />
+    return <Login onSuccess={(token, userData) => userData && login(token, userData)} />
   }
 
   const renderPage = () => {
     switch (currentRoute) {
       case '/dashboard': return <Dashboard />
       case '/flows': return <Flows />
+      case '/my-forms': return <MyForms />
       case '/execution': return <FlowExecution />
       case '/documents': return <Documents />
-      case '/entities': return <Entities />
+      case '/clients': return <Clients />
       case '/audit': return <AuditLog />
       case '/users': return <Users />
       case '/settings': return <Settings />

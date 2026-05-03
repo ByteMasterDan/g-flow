@@ -13,9 +13,13 @@ function initExecutionsSheet() {
   let sheet = ss.getSheetByName(EXECUTION_SHEET);
   if (!sheet) {
     sheet = ss.insertSheet(EXECUTION_SHEET);
-    sheet.getRange(1, 1, 1, 10).setValues([
-      ['ExecutionId', 'FlowId', 'FlowName', 'SubmittedBy', 'CurrentStep', 'Status', 'FormData', 'StartedAt', 'CompletedAt', 'Notes']
+    sheet.getRange(1, 1, 1, 13).setValues([
+      ['ExecutionId', 'FlowId', 'FlowName', 'SubmittedBy', 'CurrentStep', 'Status', 'FormData', 'StartedAt', 'CompletedAt', 'Notes', 'AssignedTo', 'ClaimedBy', 'ClaimedAt']
     ]).setFontWeight('bold');
+  } else if (sheet.getLastColumn() < 13) {
+    sheet.getRange(1, 11).setValue('AssignedTo').setFontWeight('bold');
+    sheet.getRange(1, 12).setValue('ClaimedBy').setFontWeight('bold');
+    sheet.getRange(1, 13).setValue('ClaimedAt').setFontWeight('bold');
   }
   return sheet;
 }
@@ -32,10 +36,24 @@ function startExecution(token, flowId, formData, files) {
     const executionId = 'EXEC-' + new Date().getTime();
     const now = new Date().toISOString();
 
+    let flowName = '';
+    let assignedTo = [];
+    const flowResult = getFlowById(token, flowId);
+    if (flowResult.success && flowResult.flow) {
+      flowName = flowResult.flow.flowName || '';
+      const steps = flowResult.flow.steps || [];
+      for (const step of steps) {
+        if (step.type === 'form' && step.assignees && step.assignees.length > 0) {
+          assignedTo = step.assignees;
+          break;
+        }
+      }
+    }
+
     sheet.appendRow([
       executionId,
       flowId,
-      '',
+      flowName,
       session.email,
       0,
       'Pending',
@@ -43,6 +61,9 @@ function startExecution(token, flowId, formData, files) {
       now,
       '',
       JSON.stringify({ files: files || [] }),
+      JSON.stringify(assignedTo),
+      '',
+      '',
     ]);
 
     logAuditAction(executionId, session.email, 'EXECUTION_STARTED', 'Flow execution started: ' + flowId);
@@ -437,5 +458,181 @@ function getDocuments(token, filterEntity) {
     return { success: true, documents };
   } catch (e) {
     return { success: false, error: 'getDocuments error: ' + e.message };
+  }
+}
+
+/**
+ * API: Get forms assigned to the current user
+ */
+function getMyAssignedForms(token) {
+  const session = getSession(token);
+  if (!session.authenticated) return { success: false, error: 'Not authenticated' };
+
+  try {
+    const ss = CONFIG.getSpreadsheet();
+    const sheet = ss.getSheetByName(EXECUTION_SHEET);
+    if (!sheet) return { success: true, forms: [] };
+
+    const data = sheet.getDataRange().getValues();
+    const myForms = [];
+    const userEmail = session.email.toLowerCase();
+
+    for (let i = 1; i < data.length; i++) {
+      if (!data[i][0]) continue;
+
+      let assignedTo = [];
+      try { assignedTo = JSON.parse(data[i][10] || '[]'); } catch (e) {}
+
+      const assignedLower = assignedTo.map(function(a) { return a.toLowerCase(); });
+      if (assignedLower.indexOf(userEmail) === -1) continue;
+
+      let formData = {};
+      try { formData = JSON.parse(data[i][6] || '{}'); } catch (e) {}
+
+      const claimedBy = (data[i][11] || '').toString().toLowerCase();
+
+      myForms.push({
+        executionId: data[i][0],
+        flowId: data[i][1],
+        flowName: data[i][2],
+        submittedBy: data[i][3],
+        status: data[i][5],
+        formData: formData,
+        startedAt: data[i][7],
+        completedAt: data[i][8],
+        assignedTo: assignedTo,
+        claimedBy: data[i][11] || '',
+        claimedAt: data[i][12] || '',
+      });
+    }
+
+    myForms.sort(function(a, b) { return new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(); });
+
+    return { success: true, forms: myForms };
+  } catch (e) {
+    return { success: false, error: 'getMyAssignedForms error: ' + e.message };
+  }
+}
+
+/**
+ * API: Claim a form execution
+ */
+function claimForm(token, executionId) {
+  const session = getSession(token);
+  if (!session.authenticated) return { success: false, error: 'Not authenticated' };
+
+  try {
+    const ss = CONFIG.getSpreadsheet();
+    const sheet = ss.getSheetByName(EXECUTION_SHEET);
+    if (!sheet) return { success: false, error: 'No executions sheet' };
+
+    const data = sheet.getDataRange().getValues();
+    const userEmail = session.email.toLowerCase();
+
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] !== executionId) continue;
+
+      let assignedTo = [];
+      try { assignedTo = JSON.parse(data[i][10] || '[]'); } catch (e) {}
+
+      const assignedLower = assignedTo.map(function(a) { return a.toLowerCase(); });
+      if (assignedLower.indexOf(userEmail) === -1) {
+        return { success: false, error: 'You are not assigned to this form' };
+      }
+
+      const currentClaimer = (data[i][11] || '').toString();
+      if (currentClaimer && currentClaimer.toLowerCase() !== userEmail) {
+        return { success: false, error: 'This form is already claimed by ' + currentClaimer };
+      }
+
+      const currentStatus = (data[i][5] || '').toString();
+      if (currentStatus !== 'Pending') {
+        return { success: false, error: 'This form is already ' + currentStatus.toLowerCase() };
+      }
+
+      sheet.getRange(i + 1, 12).setValue(session.email);
+      sheet.getRange(i + 1, 13).setValue(new Date().toISOString());
+
+      logAuditAction(executionId, session.email, 'FORM_CLAIMED', 'Form claimed by: ' + session.email);
+
+      return { success: true, message: 'Form claimed successfully' };
+    }
+
+    return { success: false, error: 'Execution not found' };
+  } catch (e) {
+    return { success: false, error: 'claimForm error: ' + e.message };
+  }
+}
+
+/**
+ * API: Release a claimed form
+ */
+function releaseForm(token, executionId) {
+  const session = getSession(token);
+  if (!session.authenticated) return { success: false, error: 'Not authenticated' };
+
+  try {
+    const ss = CONFIG.getSpreadsheet();
+    const sheet = ss.getSheetByName(EXECUTION_SHEET);
+    if (!sheet) return { success: false, error: 'No executions sheet' };
+
+    const data = sheet.getDataRange().getValues();
+
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] !== executionId) continue;
+
+      const currentClaimer = (data[i][11] || '').toString().toLowerCase();
+      if (currentClaimer !== session.email.toLowerCase()) {
+        return { success: false, error: 'You have not claimed this form' };
+      }
+
+      sheet.getRange(i + 1, 12).setValue('');
+      sheet.getRange(i + 1, 13).setValue('');
+
+      logAuditAction(executionId, session.email, 'FORM_RELEASED', 'Form released by: ' + session.email);
+
+      return { success: true, message: 'Form released successfully' };
+    }
+
+    return { success: false, error: 'Execution not found' };
+  } catch (e) {
+    return { success: false, error: 'releaseForm error: ' + e.message };
+  }
+}
+
+/**
+ * API: Submit form data for a claimed execution
+ */
+function submitFormData(token, executionId, formData) {
+  const session = getSession(token);
+  if (!session.authenticated) return { success: false, error: 'Not authenticated' };
+
+  try {
+    const ss = CONFIG.getSpreadsheet();
+    const sheet = ss.getSheetByName(EXECUTION_SHEET);
+    if (!sheet) return { success: false, error: 'No executions sheet' };
+
+    const data = sheet.getDataRange().getValues();
+
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] !== executionId) continue;
+
+      const currentClaimer = (data[i][11] || '').toString().toLowerCase();
+      if (currentClaimer !== session.email.toLowerCase()) {
+        return { success: false, error: 'You have not claimed this form' };
+      }
+
+      sheet.getRange(i + 1, 7).setValue(JSON.stringify(formData || {}));
+      sheet.getRange(i + 1, 6).setValue('Submitted');
+      sheet.getRange(i + 1, 9).setValue(new Date().toISOString());
+
+      logAuditAction(executionId, session.email, 'FORM_SUBMITTED', 'Form data submitted by: ' + session.email);
+
+      return { success: true, message: 'Form submitted successfully' };
+    }
+
+    return { success: false, error: 'Execution not found' };
+  } catch (e) {
+    return { success: false, error: 'submitFormData error: ' + e.message };
   }
 }
