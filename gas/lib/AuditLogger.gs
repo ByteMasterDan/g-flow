@@ -21,7 +21,7 @@ function getAuditLogs(token, filters) {
     for (let i = 1; i < data.length; i++) {
       if (data[i][0]) {
         const log = {
-          timestamp: data[i][0],
+          timestamp: normalizeDate(data[i][0]),
           approvalId: data[i][1],
           actorEmail: data[i][2],
           action: data[i][3],

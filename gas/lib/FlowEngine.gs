@@ -102,8 +102,8 @@ function getExecutions(token, flowId) {
           currentStep: data[i][4],
           status: data[i][5],
           formData: formData,
-          startedAt: data[i][7],
-          completedAt: data[i][8],
+          startedAt: normalizeDate(data[i][7]),
+          completedAt: normalizeDate(data[i][8]),
           notes: data[i][9],
         };
 
@@ -149,7 +149,7 @@ function getApprovals(token) {
           currentStep: data[i][4],
           status: data[i][5],
           formData: formData,
-          startedAt: data[i][7],
+          startedAt: normalizeDate(data[i][7]),
         });
       }
     }
@@ -226,8 +226,8 @@ function getExecutionDetail(token, executionId) {
             currentStep: data[i][4],
             status: data[i][5],
             formData: formData,
-            startedAt: data[i][7],
-            completedAt: data[i][8],
+            startedAt: normalizeDate(data[i][7]),
+            completedAt: normalizeDate(data[i][8]),
             notes: data[i][9],
           },
         };
@@ -450,7 +450,7 @@ function getDocuments(token, filterEntity) {
           submittedBy: data[i][4],
           entityTag: entityTag,
           files: files,
-          submittedAt: data[i][7],
+          submittedAt: normalizeDate(data[i][7]),
         });
       }
     }
@@ -498,11 +498,11 @@ function getMyAssignedForms(token) {
         submittedBy: data[i][3],
         status: data[i][5],
         formData: formData,
-        startedAt: data[i][7],
-        completedAt: data[i][8],
+        startedAt: normalizeDate(data[i][7]),
+        completedAt: normalizeDate(data[i][8]),
         assignedTo: assignedTo,
         claimedBy: data[i][11] || '',
-        claimedAt: data[i][12] || '',
+        claimedAt: normalizeDate(data[i][12]),
       });
     }
 

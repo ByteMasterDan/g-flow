@@ -19,6 +19,12 @@ function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
+function normalizeDate(value) {
+  if (!value) return '';
+  if (value instanceof Date) return value.toISOString();
+  return value.toString();
+}
+
 function apiCall(jsonString) {
   const response = { success: false, data: null, error: null };
   let action = 'unknown';
@@ -209,7 +215,7 @@ function getDashboardStats(token) {
     if (flowsSheet) {
       const flowsData = flowsSheet.getDataRange().getValues();
       for (let i = 1; i < flowsData.length; i++) {
-        if (flowsData[i][6] === true || flowsData[i][6] === 'TRUE') activeFlows++;
+        if (flowsData[i][8] === true || flowsData[i][8] === 'TRUE') activeFlows++;
       }
     }
 
@@ -252,7 +258,7 @@ function getDashboardStats(token) {
       for (let i = Math.max(1, auditData.length - 5); i < auditData.length; i++) {
         if (auditData[i][0]) {
           recentLogs.push({
-            timestamp: auditData[i][0],
+            timestamp: normalizeDate(auditData[i][0]),
             actorEmail: auditData[i][2],
             action: auditData[i][3],
             details: auditData[i][4],

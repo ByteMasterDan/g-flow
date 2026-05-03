@@ -25,7 +25,7 @@ function getClients(token) {
           displayName: data[i][2],
           verifiedEmail: data[i][3],
           isActive: data[i][4] === true || data[i][4] === 'TRUE',
-          createdAt: data[i][5],
+          createdAt: normalizeDate(data[i][5]),
         });
       }
     }

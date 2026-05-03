@@ -67,6 +67,7 @@ const catalogItems = [
 export default function Flows() {
   const { user } = useAuthStore()
   const [mode, setMode] = useState<'list' | 'edit'>('list')
+  const [loading, setLoading] = useState(true)
   const [flows, setFlows] = useState<any[]>([])
   const [selectedFlow, setSelectedFlow] = useState<any>(null)
   const [flowName, setFlowName] = useState('')
@@ -277,6 +278,14 @@ export default function Flows() {
       ),
     },
   ]
+
+  if (loading) {
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </motion.div>
+    )
+  }
 
   // LIST MODE
   if (mode === 'list') {

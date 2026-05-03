@@ -32,7 +32,7 @@ function getFlows(token) {
           formData: formData,
           formLink: data[i][5] || '',
           createdBy: data[i][6],
-          createdAt: data[i][7],
+          createdAt: normalizeDate(data[i][7]),
           isActive: data[i][8] === true || data[i][8] === 'TRUE',
         });
       }
@@ -175,7 +175,7 @@ function getFlowById(token, flowId) {
             formData: formData,
             formLink: data[i][5] || '',
             createdBy: data[i][6],
-            createdAt: data[i][7],
+            createdAt: normalizeDate(data[i][7]),
             isActive: data[i][8] === true || data[i][8] === 'TRUE',
           },
         };
